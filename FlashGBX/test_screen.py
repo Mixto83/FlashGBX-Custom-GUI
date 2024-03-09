@@ -1,6 +1,8 @@
 import os
 import parser
 import sys
+import threading
+import subprocess
 import traceback
 
 from .pyside import QtCore, QtWidgets, QtGui, QApplication
@@ -23,19 +25,36 @@ class TestScreen(QtWidgets.QWidget):
         self.ARGS = args
 
         self.layout = QtWidgets.QGridLayout()
-        self.button = QtWidgets.QPushButton("Go to og GUI")
-        self.connect(self.button, QtCore.SIGNAL("clicked()"), self.restartAsOriginalGUI)
 
-        self.layout.addWidget(self.button)
+        self.goToGUIBtn = QtWidgets.QPushButton("Go to og GUI")
+        self.connect(self.goToGUIBtn, QtCore.SIGNAL("clicked()"), self.restartAsOriginalGUI)
+
+        self.openEmuBtn = QtWidgets.QPushButton("Play in BGB")
+        self.connect(self.openEmuBtn, QtCore.SIGNAL("clicked()"), self.openEmulator)
+
+        self.layout.addWidget(self.goToGUIBtn)
+        self.layout.addWidget(self.openEmuBtn)
         self.setLayout(self.layout)
 
     def restartAsOriginalGUI(self):
-        gui_args = self.ARGS
-        print(sys.argv)
         os.execv(sys.executable, ['python'] + [sys.argv[0]])
 
+    def openEmulator(self):
+        t = self.popenWithCallback(["C:\\Users\\admin\\Documents\\bgb\\bgb.exe", "C:\\Users\\admin\\Documents\\crystal clear\\Crystal Clear.gbc"], self.onEmulatorClosed)
+
+    def onEmulatorClosed(self):
+        print("Emulator closed")
+
+    def popenWithCallback(self, args, on_exit):
+        def runInThread(args, on_exit):
+            p = subprocess.Popen(args)
+            p.wait()
+            on_exit()
+        thread = threading.Thread(target=runInThread, args=(args, on_exit))
+        thread.start()
+        return thread
+
     def run(self):
-        print("run")
         self.show()
         qt_app.exec()
 
