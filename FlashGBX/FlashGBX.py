@@ -112,6 +112,7 @@ def main(portableMode=False):
 	except:
 		pass
 	parser.add_argument("--cli", help="force command line interface mode", action="store_true")
+	parser.add_argument("--custom", help="forces custom GUI", action="store_true")
 	parser.add_argument("--reset", help="clears all settings such as last used directory information", action="store_true")
 	parser.add_argument("--debug", help="enable debug messages used for development", action="store_true")
 	
@@ -181,7 +182,7 @@ def main(portableMode=False):
 
 	app = None
 	exc = None
-	if not args["argparsed"].cli:
+	if not args["argparsed"].cli and not args["argparsed"].custom:
 		try:
 			from . import FlashGBX_GUI
 			app = FlashGBX_GUI.FlashGBX_GUI(args)
@@ -207,7 +208,32 @@ def main(portableMode=False):
 			return
 		
 		app.run()
-	
+	elif args["argparsed"].custom:
+		try:
+			from . import test_screen
+			app = test_screen.TestScreen(args)
+		except:
+			exc = traceback.format_exc()
+			app = None
+
+		if app is None:
+			from . import FlashGBX_CLI
+			if args["argparsed"].action is None:
+				parser.print_help()
+				print(
+					"\n\n{:s}NOTE: GUI mode couldn’t be launched, but the application can be run in CLI mode.\n      Optional command line switches are explained above.{:s}\n".format(
+						Util.ANSI.RED, Util.ANSI.RESET))
+				if exc is not None: print("{:s}{:s}{:s}".format(Util.ANSI.YELLOW, exc, Util.ANSI.RESET))
+
+			print("Now running in CLI mode.\n")
+			app = FlashGBX_CLI.FlashGBX_CLI(args)
+			try:
+				app.run()
+			except KeyboardInterrupt:
+				print("\n\nProgram stopped.")
+			return
+
+		app.run()
 	else:
 		from . import FlashGBX_CLI
 		print("Now running in CLI mode.\n")
