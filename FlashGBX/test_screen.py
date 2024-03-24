@@ -1,4 +1,3 @@
-import parser
 
 import datetime, shutil, platform, os, math, traceback, re, time, serial, zipfile, subprocess, threading, sys
 
@@ -68,18 +67,24 @@ class TestScreen(QtWidgets.QWidget):
         args = self.ARGS["argparsed"]
         header = self.SetUpCart(args)
         self.BackupROM(args, header)
+        self.BackupRestoreRAM(args, header, "backup-save", True)
 
-        self.BackupRestoreRAM(args, header, "backup-save")
+        #emu_path = "C:\\Users\\admin\\Documents\\bgb\\bgb.exe"
+        emu_path = "E:\\Emuladores\\Gameboy\\bgbw64\\bgb64.exe"
+        roms_dir = sys.path[1]
+        rom_path = Util.GenerateFileName(mode=self.CONN.GetMode(), header=self.CONN.INFO, settings=None)
+
         self.DisconnectDevice()
-        t = self.popenWithCallback(["C:\\Users\\admin\\Documents\\bgb\\bgb.exe",
-                                    "C:\\Users\\admin\\Documents\\Git_projects\\FlashGBX-Custom-GUI\\PM_CRYSTAL_BYTE-0.gbc"],
+        t = self.popenWithCallback([emu_path,
+                                    roms_dir + "\\" + rom_path],
                                    self.onEmulatorClosed)
 
-    def onEmulatorClosed(self, header):
+    def onEmulatorClosed(self):
         print("Emulator closed")
         args = self.ARGS["argparsed"]
         header = self.SetUpCart(args)
-        self.BackupRestoreRAM(args, header, )
+        self.BackupRestoreRAM(args, header, "restore-save", True)
+        self.DisconnectDevice()
 
     def BackupROM(self, args, header):
         mbc = 1
@@ -211,7 +216,7 @@ class TestScreen(QtWidgets.QWidget):
             args={'mode': 1, 'path': path, 'mbc': mbc, 'rom_size': rom_size, 'agb_rom_size': rom_size, 'start_addr': 0,
                   'fast_read_mode': True, 'cart_type': cart_type}, signal=self.PROGRESS.SetProgress)
 
-    def BackupRestoreRAM(self, args, header, action):
+    def BackupRestoreRAM(self, args, header, action, overwrite=False):
         add_date_time = args.save_filename_add_datetime is True
         rtc = args.store_rtc is True
 
@@ -316,19 +321,19 @@ class TestScreen(QtWidgets.QWidget):
             else:
                 s_mbc = " using Mapper Type 0x{:X}".format(mbc)
         if action == "backup-save":
-            if not args.overwrite and os.path.exists(os.path.abspath(path)):
-                #answer = input("The target file “{:s}” already exists.\nDo you want to overwrite it? [y/N]: ".format(
-                #    os.path.abspath(path))).strip().lower()
-                #print("")
-                #if answer != "y":
-                #    print("Canceled.")
-                #    return
+            if not overwrite and os.path.exists(os.path.abspath(path)):
+                answer = input("The target file “{:s}” already exists.\nDo you want to overwrite it? [y/N]: ".format(
+                    os.path.abspath(path))).strip().lower()
+                print("")
+                if answer != "y":
+                    print("Canceled.")
+                    return
                 print("Save file will be rewritten")
             print("The cartridge save data will now be read{:s} and saved to the following file:\n{:s}".format(s_mbc,
                                                                                                                os.path.abspath(
                                                                                                                    path)))
         elif action == "restore-save":
-            if not args.overwrite:
+            if not overwrite:
                 answer = input(
                     "Restoring save data to the cartridge will erase the existing save.\nDo you want to overwrite it? [y/N]: ").strip().lower()
                 if answer != "y":
@@ -338,7 +343,7 @@ class TestScreen(QtWidgets.QWidget):
                                                                                                         os.path.abspath(
                                                                                                             path)))
         elif action == "erase-save":
-            if not args.overwrite:
+            if not overwrite:
                 answer = input("Do you really want to erase the save data from the cartridge? [y/N]: ").strip().lower()
                 if answer != "y":
                     print("Canceled.")
@@ -360,7 +365,7 @@ class TestScreen(QtWidgets.QWidget):
                         with open(path, "rb") as f:
                             buffer = bytearray(f.read())
                         if buffer[0xD000:0xF000] != self.CONN.INFO["ereader_calibration"]:
-                            if not args.overwrite:
+                            if not overwrite:
                                 if action == "erase-save": action = "restore-save"
                                 print("Note: Keeping existing e-Reader calibration data.")
                                 buffer[0xD000:0xF000] = self.CONN.INFO["ereader_calibration"]
@@ -395,9 +400,9 @@ class TestScreen(QtWidgets.QWidget):
             verify_write = args.no_verify_write is False
             targs = {'mode': 3, 'path': path, 'mbc': mbc, 'save_type': save_type, 'erase': False, 'rtc': rtc,
                      'verify_write': verify_write}
-            if buffer is not None:
-                targs["buffer"] = buffer
-                targs["path"] = None
+            #if buffer is not None:
+            #    targs["buffer"] = buffer
+            #    targs["path"] = None
             self.CONN.TransferData(args=targs, signal=self.PROGRESS.SetProgress)
         elif action == "erase-save":
             self.CONN.TransferData(
