@@ -1,8 +1,11 @@
 
 import datetime, shutil, platform, os, math, traceback, re, time, serial, zipfile, subprocess, threading, sys
 
+from PySide6.QtCore import QFile
+
 from . import Util
 from .pyside import QtCore, QtWidgets, QtGui, QApplication
+from PySide6.QtUiTools import QUiLoader
 from .Util import APPNAME, VERSION, VERSION_PEP440, ANSI
 from .RomFileDMG import RomFileDMG
 from .RomFileAGB import RomFileAGB
@@ -32,12 +35,21 @@ class TestScreen(QtWidgets.QWidget):
         Util.CONFIG_PATH = args['config_path']
         self.FLASHCARTS = args["flashcarts"]
         self.PROGRESS = Util.Progress(self.UpdateProgress)
+        self.ARGS = args
 
         global prog_bar_part_char
         if platform.system() == "Windows":
             prog_bar_part_char = [" ", " ", " ", " ", "▌", "▌", "▌", "▌"]
         else:
             prog_bar_part_char = [" ", "▏", "▎", "▍", "▌", "▋", "▊", "▉"]
+
+        '''ui_file = QFile("ui/main_window.ui")
+        ui_file.open(QFile.ReadOnly)
+
+        loader = QUiLoader()
+        window = loader.load(ui_file)
+        window.show()'''
+
 
         self.title = 'Test'
         self.left = 0
@@ -46,7 +58,7 @@ class TestScreen(QtWidgets.QWidget):
         self.height = 200
         self.setWindowTitle(self.title)
         self.setGeometry(self.left, self.top, self.width, self.height)
-        self.ARGS = args
+        
 
         self.layout = QtWidgets.QGridLayout()
 
@@ -59,6 +71,9 @@ class TestScreen(QtWidgets.QWidget):
         self.layout.addWidget(self.goToGUIBtn)
         self.layout.addWidget(self.openEmuBtn)
         self.setLayout(self.layout)
+
+
+
 
     def restartAsOriginalGUI(self):
         os.execv(sys.executable, ['python'] + [sys.argv[0]])
