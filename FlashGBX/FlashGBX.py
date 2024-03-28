@@ -210,8 +210,10 @@ def main(portableMode=False):
 		app.run()
 	elif args["argparsed"].custom:
 		try:
-			from . import test_screen
-			app = test_screen.TestScreen(args)
+			'''from . import test_screen
+			app = test_screen.TestScreen(args)'''
+			from . import Custom_UI
+			app = Custom_UI.Custom_UI(args)
 		except:
 			exc = traceback.format_exc()
 			app = None

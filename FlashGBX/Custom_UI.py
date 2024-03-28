@@ -1,4 +1,4 @@
-
+from PySide6.QtWidgets import QMainWindow, QApplication
 import datetime, shutil, platform, os, math, traceback, re, time, serial, zipfile, subprocess, threading, sys
 
 from PySide6.QtCore import QFile
@@ -11,11 +11,13 @@ from .RomFileDMG import RomFileDMG
 from .RomFileAGB import RomFileAGB
 from .PocketCamera import PocketCamera
 from . import hw_GBxCartRW, hw_GBxCartRW_ofw
+from .ui.main_window import MainWindow
 
 hw_devices = [hw_GBxCartRW, hw_GBxCartRW_ofw]
 
 
-class TestScreen(QtWidgets.QWidget):
+class Custom_UI(QMainWindow):
+
     CONN = None
     SETTINGS = None
     DEVICE = None
@@ -29,7 +31,9 @@ class TestScreen(QtWidgets.QWidget):
     STATUS = {}
 
     def __init__(self, args):
-        QtWidgets.QWidget.__init__(self)
+        super(Custom_UI, self).__init__()
+        self.ui = MainWindow()
+        self.ui.setupUi(self)
 
         Util.APP_PATH = args['app_path']
         Util.CONFIG_PATH = args['config_path']
@@ -43,37 +47,9 @@ class TestScreen(QtWidgets.QWidget):
         else:
             prog_bar_part_char = [" ", "▏", "▎", "▍", "▌", "▋", "▊", "▉"]
 
-        '''ui_file = QFile("ui/main_window.ui")
-        ui_file.open(QFile.ReadOnly)
-
-        loader = QUiLoader()
-        window = loader.load(ui_file)
-        window.show()'''
-
-
-        self.title = 'Test'
-        self.left = 0
-        self.top = 0
-        self.width = 300
-        self.height = 200
-        self.setWindowTitle(self.title)
-        self.setGeometry(self.left, self.top, self.width, self.height)
-        
-
-        self.layout = QtWidgets.QGridLayout()
-
-        self.goToGUIBtn = QtWidgets.QPushButton("Go to og GUI")
-        self.connect(self.goToGUIBtn, QtCore.SIGNAL("clicked()"), self.restartAsOriginalGUI)
-
-        self.openEmuBtn = QtWidgets.QPushButton("Play in BGB")
-        self.connect(self.openEmuBtn, QtCore.SIGNAL("clicked()"), self.openEmulator)
-
-        self.layout.addWidget(self.goToGUIBtn)
-        self.layout.addWidget(self.openEmuBtn)
-        self.setLayout(self.layout)
-
-
-
+        #connect buttons
+        self.ui.playButton.clicked.connect(self.openEmulator)
+        self.ui.pushButton_5.clicked.connect(self.restartAsOriginalGUI)
 
     def restartAsOriginalGUI(self):
         os.execv(sys.executable, ['python'] + [sys.argv[0]])
@@ -1013,3 +989,8 @@ class TestScreen(QtWidgets.QWidget):
 
 qt_app = QApplication(sys.argv)
 qt_app.setApplicationName(APPNAME)
+
+'''if __name__ == '__main__':
+    window = Custom_UI()
+    window.run()
+'''
